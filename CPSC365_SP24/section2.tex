@@ -1,0 +1,207 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1.5in]{geometry}
+\usepackage{fontspec} % Advanced font selection
+\setmonofont{Inconsolatazi4}
+\usepackage{amsfonts, amsmath, amssymb, amsthm} % AMS Math Packages
+\usepackage{mathtools} % Mathematical tools for amsmath
+\usepackage{array, booktabs} % Extends the array and tabular environments
+\usepackage{environ} % Interface for environments
+\usepackage{parskip, setspace} % Paragraph indentation and line spacing
+\usepackage{color} % Color control
+\usepackage{colortbl} % Color to tables
+\usepackage[x11names]{xcolor} % Color extensions 
+\usepackage{soul} % Letter spacing, underlining, striking out 
+\usepackage{hyperref} % Support for hypertext
+\hypersetup{pdfborder=0 0 0, citebordercolor=Gray0, urlbordercolor=Gray0, linkbordercolor=Gray0}
+\usepackage[capitalise]{cleveref} % Better cross-referencing
+\usepackage{mdframed} % Framed environments that can split
+\usepackage{fancybox, fancyhdr} % Variations of fbox and header/footer controls
+\usepackage{tcolorbox} % Colored boxes 
+\tcbuselibrary{breakable}
+\usepackage{tabulary} % Tabular environments with variable width columns balanced
+\usepackage{scrextend} % Extends KOMA-Script classes to standard classes
+\usepackage{graphicx} % Enhanced support for graphics 
+\usepackage[shortlabels]{enumitem} % Control layout of itemize, enumerate, description
+\usepackage{tikz} % Graphics creation
+\usetikzlibrary{shapes.geometric} 
+\usepackage{fontspec, svg} % Include and extract SVG pictures
+\usepackage[linesnumbered,lined,boxed,commentsnumbered]{algorithm2e} % Algorithms creation
+\usepackage{listings} % Typeset source code listings
+\usepackage{dcolumn} % Alignment on decimal points
+\usepackage{float} % Improvements to floating objects
+\usepackage[font=scriptsize,labelfont=bf]{caption}
+\usepackage{pdflscape}
+\usepackage{adjustbox}
+
+\allowdisplaybreaks
+
+\renewcommand{\baselinestretch}{1.25}
+\sethlcolor{Cyan3!50}
+
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+\DeclarePairedDelimiter\ceiling{\lceil}{\rceil}
+
+\title{Section 2: Divide-and-Conquer Algorithms (Continued)}
+\date{February 02, 2024}
+\author{Amy Zhao}
+
+\begin{document}
+\renewcommand\labelitemi{$\vcenter{\hbox{\tiny$\bullet$}}$}
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+
+\maketitle
+
+\section{Recapping Divide and Conquer Algorithms}
+You can find supplemental slides posted on Canvas which recaps divide and conquer algorithms covered in lecture. 
+
+\section{Array Balance Point}
+We define the balance point of a sorted list of positive integers $A[1, \dots, n]$ as the greatest index $p$ such that:
+\begin{equation}
+    \sum_{i=1}^{p-1} A[i] \leq \sum_{i=p}^n A[i].
+\end{equation}
+Suppose the array that we are given is out of order, but we want to find the balance point if the array were sorted. We could sort the list first before the balance point, but this may take $\Omega(n \log n)$ steps. Let's try to find an algorithm that finds the balance point of $A$ in $O(n)$ steps. 
+
+We can compute the balance point via a modified binary search algorithm. We first compute the total sum $T$ of the elements in $A$. The general idea is to maintain an interval of indices containing the balance point and modify $A$ so that $A[\ell, \dots, r]$ contains the $\ell$-th to $r$-th smallest elements. We also keep track of the partial sum $S$ of the first to the $(\ell-1)$-th smallest elements of $A$. 
+
+In iteration $i$, we compute the median element $m_i$ of $A[\ell, \dots, r]$ and partition around $m_i$. This means that the elements before $m_i$ are at most $m_i$, and the elements after $m_i$ are at least $m_i$. We then compute the sum $S_i$ of elements that precede $m_i$ which takes $O(r - \ell)$ computation time. We halve our search area by comparing $S + S_i$ with $\frac{T}{2}$ to ensure we retain the balance point. $S$ is updated accordingly, and the algorithm terminates when the interval $[\ell, \dots, r]$ contains a single index. 
+
+
+\IncMargin{2em}
+\begin{algorithm}[H]
+    \footnotesize
+    \setstretch{1.125}
+    \SetKwProg{Fn}{Function}{:}{}
+    \SetKwFunction{BalancePoint}{BalancePoint}
+    \SetKwFunction{Sum}{Sum}
+    \SetKwFunction{GetMedian}{GetMedian}
+    \SetKwFunction{PartitionPivot}{PartitionPivot}
+    \SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
+    \Input{Array $A$ of unsorted positive integers}
+    \Output{Balance point index}
+    \BlankLine
+    \Fn{\BalancePoint{$A$}}{
+
+        $\ell \gets 1$, $r \gets n$ \; 
+        $S \gets 0$ \; 
+        $T \gets$ \Sum{$A[1, \dots, n]$} \; 
+        \BlankLine
+        \While{$\ell < r$}{
+            $m_i \gets$ \GetMedian{$A$, $\ell$, $r$} \; 
+            \PartitionPivot{$A$, $\ell$, $r$, $m_i$} \; 
+            $\text{mid} \gets \floor*{\frac{\ell + r}{2}}$ \; 
+            $S_i \gets$ \Sum($A[\ell, \dots, \text{mid}]$) \; 
+            \uIf{$S + S_i \leq \frac{T}{2}$}{
+                $S \gets S + S_i$ \;
+                $\ell \gets \text{mid} + 1$\;
+            }
+            \uElse{
+                $r \gets \text{mid}$
+            }
+        }
+        \Return{\ell}
+    }
+\end{algorithm}\DecMargin{2em} 
+
+The proof of correctness follows a loop invariant. We claim that at each iteration, $[\ell, r]$ contains the balance point, $A[\ell, \dots, r]$ are the $\ell$-th to the $r$-th smallest elements of $A$, and $S$ is the sum from the first to the $(\ell - 1)$-th smallest elements. Evidently, this is true before the start of the loop.
+
+Suppose the loop variant holds prior to the start of the iteration on $A[\ell, \dots, r]$. The algorithm computes the median $m_i$ and modifies $A[\ell, \dots, r]$ so that every element left of $m_i$ is less than or equal to $m_i$, and everything right of $m_i$ is greater than or equal to $m_i$. Using the calculated $S_i$ (sum of values before and including the median), the algorithm accurately ``binary searches'' on the correct portion of the array.
+\begin{itemize}
+    \item If $S + S_i \leq \frac{T}{2}$, the balance point occurs after the median.
+    \item If $S + S_i > \frac{T}{2}$, the balance point occurs before the median.
+\end{itemize}
+When $[\ell, r]$ contains multiple indices, it is still feasible to ``check'' and see if it's possible to add more to $S$ and still maintain the balance required by the problem. At the end of the loop, the invariant properties stated above still hold. When the interval contains a single index, we can't continue searching, so we return the balance point of $A$. 
+
+Each iteration computes the median which takes $O(r - \ell)$ time, and partitions the elements around the median in $O(r - \ell)$ operations. With binary search, there are at most $O(\log n)$ iterations, so the total runtime is bounded by:
+\begin{equation}
+    T(n) \leq T\left(\frac{n}{2}\right) + O(n) \leq O(n). 
+\end{equation}
+
+% \section{Counting Significant Inversions}
+% Suppose we are given a sequence of $n$ numbers labeled $a_1, \dots, a_n$, which we assume are all distinct, and we define an inversion to be a pair $i < j$ such that $a_i > a_j$. The original motivation for counting inversions was to obtain a degree of how different two orderings are. Suppose we now want to count the number of significant inversions, which we define to be a pair $a_i$ and $a_j$ such that $i < j$ and $a_i > 2a_j$.
+
+% Can we modify the original algorithm for counting inversions to solve this problem? The primary difference in counting significant inversions is that we merge twice: (1) merge $b_1, \dots, b_k$ with $b_{k+1}, \dots, b_n$ to sort; and (2) merge $b_1, \dots, b_k$ with $2b_{k+1}, \dots, 2b_n$ to compute the number of inversions. For every $i$, we compute the number of inversions between $b_i$ and all $b_j$. If $b_i \leq 2b_j$, there are no significant inversions between $b_i$ and any $b_m$ such that $m \geq j$, so we decrement $j$. If $b_i > 2b_j$, it follows that $b_i > 2b_m$ for all $m$ such that $k < m \leq j$, and there are $j - k$ significant inversions involving $b_i$. This means that we need to increment the total count by $j - k$.
+
+\section{Searching Matrices}
+Consider an integer-valued matrix where the values in each row are sorted in ascending order from left to right, and values in each column are sorted in ascending order from top to bottom. One such matrix is:
+
+\scriptsize 
+\begin{equation*}
+    M = \begin{bmatrix}
+        1 & 4 & 7 & 11 & 15 \\
+        2 & 5 & 8 & 12 & 19 \\
+        3 & 6 & 9 & 16 & 22 \\
+        10 & 13 & 14 & 17 & 24 \\
+        18 & 21 & 23 & 26 & 30
+    \end{bmatrix}.
+\end{equation*}
+\normalsize
+We would like to create a divide-and-conquer algorithm to find a target element $t$ because searching the entire array is too time consuming. The overall idea is to partition the matrix into four submatrices. We claim that the target element is possibly contained in two of the four submatrices.
+
+Assuming the matrix is non-empty, it's obvious that it doesn't contain the target element $t$ if $t$ is smaller than the value in the top-left corner or larger than the value in the bottom-right corner. If this isn't the case, target $t$ is potentially contained within the matrix. We search along the matrix's middle column for a row index such that:
+\begin{equation*}
+    M[\text{row} - 1][\text{mid}] < t < M[\text{row}][\text{mid}].
+\end{equation*}
+If we don't find the target in this process, we partition the matrix into four submatrices. The top-left and bottom-right submatrices cannot contain $t$, so we exclude them from the search space before recursively applying the algorithm to the bottom-left and top-right submatrices.
+
+\IncMargin{2em}
+\begin{algorithm}[H]
+    \footnotesize
+    \setstretch{1.125}
+    \SetKwProg{Fn}{Function}{:}{}
+    \SetKwFunction{SearchMatrix}{SearchMatrix}
+    \SetKwFunction{RecursiveSearch}{RecursiveSearch}
+    \SetKwFunction{len}{len}
+    \SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
+    \Input{Matrix $M$ and target $t$}
+    \Output{\emph{True} if $t$ exists in $M$; \emph{False} otherwise}
+    \BlankLine
+    \Fn{\SearchMatrix{$M$, $t$}}{
+        \Fn{\RecursiveSearch{left, up, right, down}}{
+            \uIf{left $>$ right or up $>$ down}{\Return{False}}
+            \uElseIf{$t < M[\text{\upshape up}][\text{\upshape left}]$ or $t > M[\text{\upshape down}][\text{\upshape right}]$}{\Return{False}}
+            \BlankLine
+            $\text{mid} \gets \floor{\frac{\text{left} + (\text{right} - \text{left})}{2}}$\; 
+            $\text{\upshape row} \gets \text{\upshape up}$\; 
+            \While{$\text{row} \leq \text{down}$ and $M[\text{\upshape row}][\text{\upshape mid}] \leq t$}{
+                \uIf{$M[\text{\upshape row}][\text{\upshape mid}] == t$} {\Return{True}}
+                $\text{row} \gets \text{row} + 1$\; 
+
+                \Return{\RecursiveSearch{left, row, mid $-$ 1, down} or \RecursiveSearch{mid $+$ 1, up, right, row $-$ 1}}
+            }
+        }
+        \Return{\RecursiveSearch{0, 0, \len{$M[0]$} $-$ 1, \len{$M$} $-$ 1}}
+    }
+\end{algorithm}\DecMargin{2em} 
+
+We can see pretty clearly that there are two recursive calls in each iteration, and each recursive call searches on a quarter of the original matrix. The work required outside of these recursive calls is the work done to find a partition point along a $O(n)$ length column; the runtime is $\sqrt{n}$. Thus, the total runtime is given by:
+\begin{equation}
+    T(n) \leq 2 T \left(\frac{n}{4}\right) + \sqrt{n} \Longrightarrow O(n \log n).
+\end{equation}
+
+
+\section{Application of FFT: String Matching}
+Suppose we have a substring $p = p_{m-1}p_{m-2}\dots p_0$, and we want to return the indices where it matches within a larger string $s = s_{n-1}s_{n-2}\dots s_0$. For example, if $s = ababaababbaaabababaaab$ and $p = baba$, the output should tell us that the substring occurs three times at starting positions 1, 13, and 15. With a brute force method, we can compare the $m$-character substring against all possible $n - (m-1)$ starting positions in the longer string. The problem is that this is extremely efficient, with a time complexity of $O(m(n-m + 1))$. We can probably do better\dots
+
+Define the mapping $f: \{a, b\} \to \{-1, 1\}$ where $f(a) = 1$ and $f(b) = -1$. For a substring of $s$ of length $m$, the inner product:
+\begin{equation*}
+    f(s_k\dots s_{k+m-1})\cdot f(p_0 \dots p_{m-1}) = \sum_{i=1}^{m-1} f(s_{k+i}f(p_i))
+\end{equation*}
+is equal to $m$ if and only if $s_k \dots s_{k+m-1} = p_0 \dots p_{m-1}$.
+
+We set up two polynomials:
+\begin{align*}
+    s(x) &= f(s_0) + f(s_1)x + \cdots + f(s_{n-1})x^{n-1}, \\
+    p(x) &= f(p_{m-1}) + f(p_{m-2})x + \cdots + f(p_0)x^{m-1}.
+\end{align*}
+The product of the polynomials will have coefficients $C_k = x^{k+m-1}$ equal to the sum $\sum_{i=0}^{m-1} s_{k+i}p_i$; $C_k = m$ if and only if $s_k = p_0$, $s_{k+1} = p_1$, $\dots$, $s_{k+m-1} = p_{m-1}$. Places where $C_k = m$ will indicate positions where the substring matches the input string.
+
+Continuing the example presented previously, the two polynomials are:
+\begin{align*}
+    s(x) = 1 &- x + x^2 - x^3 + x^4 + x^5 - x^6 + x^7 - x^8 - x^9 + x^{10} + x^{11} \\
+             & + x^{12} - x^{13} + x^{14} - x^{15} + x^{16} - x^{17} + x^{18} + x^{19} + x^{20} - x^{21}, \\
+    p(x) = 1 &- x + x^2 - x^3.
+\end{align*}
+The $x$ terms where the coefficients are equal to 4 are $x^4$, $x^{16}$, and $x^{18}$. 
+
+FFT affords us an efficient manner to calculate the product of polynomials, yielding a much better algorithm than the brute force method discussed first. 
+\end{document}
