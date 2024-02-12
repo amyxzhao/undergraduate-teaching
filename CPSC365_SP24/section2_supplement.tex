@@ -137,7 +137,7 @@
         \item Use the algorithm recursively to find the median (denote it with $x$) of the medians found in the previous step. 
         \item Partition $A$ around $x$ (reorder the elements of $A$ in place so that all elements prior to $x$ are less than $x$). Let $k = \text{rank}(x)$.
         \begin{center}
-            \includegraphics[scale=0.3]{qs_diagram.png}
+            \includegraphics[scale=0.3]{figures/qs_diagram.png}
         \end{center}
         \item Recursively call the algorithm on the appropriate part of the array. 
         \begin{itemize}
@@ -156,7 +156,7 @@
 \end{frame}
 \begin{frame}
    \begin{center}
-        \includegraphics[scale=0.17]{select_example.png}
+        \includegraphics[scale=0.17]{figures/select_example.png}
    \end{center}
    In the diagram, the median of each group is shown in yellow, and $x$ is shown in green. The smaller elements point to the larger elements. \\[1em]
    In general, there are $\lceil \frac{n}{5} \rceil$ groups, which implies there are $\lfloor \frac{1}{2} \lceil \frac{n}{5} \rceil \rfloor$ groups with median at most $x$, and $\lfloor \frac{1}{2} \lceil \frac{n}{5} \rceil \rfloor - 1$ groups with median less than $x$. 
