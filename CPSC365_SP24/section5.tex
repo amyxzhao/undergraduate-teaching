@@ -1,0 +1,336 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1.5in]{geometry}
+\usepackage{fontspec} % Advanced font selection
+\setmonofont[Scale=MatchLowercase]{Inconsolatazi4}
+\usepackage{amsfonts, amsmath, amssymb, amsthm} % AMS Math Packages
+\usepackage{mathtools} % Mathematical tools for amsmath
+\usepackage{array, booktabs} % Extends the array and tabular environments
+\usepackage{environ} % Interface for environments
+\usepackage{parskip, setspace} % Paragraph indentation and line spacing
+\usepackage{color} % Color control
+\usepackage{colortbl} % Color to tables
+\usepackage[x11names]{xcolor} % Color extensions 
+\usepackage{soul} % Letter spacing, underlining, striking out 
+\usepackage{hyperref} % Support for hypertext
+\hypersetup{pdfborder=0 0 0, citebordercolor=Gray0, urlbordercolor=Gray0, linkbordercolor=Gray0}
+\usepackage[capitalise]{cleveref} % Better cross-referencing
+\usepackage{mdframed} % Framed environments that can split
+\usepackage{fancybox, fancyhdr} % Variations of fbox and header/footer controls
+\usepackage{tcolorbox} % Colored boxes 
+\tcbuselibrary{breakable}
+\usepackage{tabulary} % Tabular environments with variable width columns balanced
+\usepackage{scrextend} % Extends KOMA-Script classes to standard classes
+\usepackage{graphicx} % Enhanced support for graphics 
+\usepackage[shortlabels]{enumitem} % Control layout of itemize, enumerate, description
+\usepackage{tikz} % Graphics creation
+\usetikzlibrary{shapes.geometric} 
+\usepackage{fontspec, svg} % Include and extract SVG pictures
+\usepackage[linesnumbered,lined,boxed,commentsnumbered]{algorithm2e} % Algorithms creation
+\usepackage{listings} % Typeset source code listings
+\usepackage{dcolumn} % Alignment on decimal points
+\usepackage{float} % Improvements to floating objects
+\usepackage[font=scriptsize,labelfont=bf]{caption}
+\usepackage{pdflscape}
+\usepackage[export]{adjustbox}
+
+\allowdisplaybreaks
+
+\renewcommand{\baselinestretch}{1.25}
+\sethlcolor{Cyan3!50}
+
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+\DeclarePairedDelimiter\ceiling{\lceil}{\rceil}
+
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+
+\title{Section 5: Dijkstra's Algorithm (Continued) and Heaps}
+\date{February 23, 2024}
+\author{Amy Zhao}
+
+\begin{document}
+\renewcommand\labelitemi{$\vcenter{\hbox{\tiny$\bullet$}}$}
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+
+\counterwithin{figure}{section}
+
+\maketitle
+
+\section{Revisiting Dijkstra's Algorithm}
+We present Dijkstra's algorithm again which explicitly uses a priority queue to find the shortest paths from a source vertex $s$. By searching for the next closest node outside a known or explored region, the algorithm minimizes path distances.
+
+\subsection{Highlighting Priority Queues}
+\IncMargin{2em}
+\begin{algorithm}[H]
+    \footnotesize
+    \DontPrintSemicolon
+    \setstretch{1.125}
+    \SetKwProg{Fn}{Function}{:}{}
+    \SetKwFunction{Dijkstra}{Dijkstra}
+    \SetKwFunction{ExtractMin}{ExtractMin}
+    \SetKwFunction{ChangeKey}{ChangeKey}
+    \SetKwInOut{Input}{Input}\SetKwInOut{Post}{Post}
+    \Input{Graph $G = (V, E)$ given as an adjacency list, starting vertex $s$}
+    \Post{Shortest distances from $s$ to $v \in V$, stored in dist[$v$]}
+    \BlankLine
+    \Fn{\Dijkstra{$G = (V, E)$, $s$}}{
+        \For{\upshape all $v \in V$}{
+            $\text{dist}[u] \gets \infty$\;
+            $\text{prev}[u] \gets \text{null}$\; 
+        }
+        \BlankLine \BlankLine
+        $\text{dist}[s] \gets 0$ \; 
+        $Q \gets$ new priority queue storing $V$ with distances as keys\; 
+
+        \BlankLine \BlankLine
+        \While{$H$ \upshape is not empty}{
+            $u \gets$ \ExtractMin{$Q$}\;
+            \BlankLine \BlankLine 
+            \For{\upshape all edges $(u, v) \in E$}{
+                \uIf{\upshape$\text{dist}[v] > \text{dist}[u] + \ell_{uv}$}{
+                    $\text{dist}[v] \gets \text{dist}[u] + \ell_{uv}$\;
+                    $\text{prev}[v] = u$\; 
+                    \ChangeKey{\upshape $Q$, $v$, $\text{dist}[v]$}\;
+                }
+            }
+        }
+    }
+\end{algorithm}\DecMargin{2em} 
+
+\subsection{Worked Example}
+Here, we provide a full worked example of Dijkstra's algorithm using a priority queue. Consider the directed graph depicted below and the source vertex $A$.
+\begin{center}
+    \includesvg[width=0.5\textwidth, pretex=\scriptsize]{figures/dijkstra_example.svg}
+\end{center}
+The priority queue is initialized using distances as keys:
+\begin{equation*}
+    Q = \{(A, 0), (B, \infty), (C, \infty), (D, \infty), (E, \infty)\},
+\end{equation*}
+\begin{center}
+    \begin{tabular}{|r|ccccc|}
+        \hline 
+        $v$ & $A$ & $B$ & $C$ & $D$ & $E$ \\ \hline 
+        $\text{dist}[v]$ & $0$ & $\infty$ & $\infty$ & $\infty$ & $\infty$ \\ \hline 
+    \end{tabular}
+\end{center}
+where each pair is of the form $(\text{vertex, distance})$. $Q$ is non-empty, so we delete the entry with the minimum key and consider the neighbors. In this example, we dequeue $(A, 0)$ and consider $(A, B) \in E$ and $(A, C) \in E$. 
+
+$\text{dist}[B] = \infty > \text{dist}[A] + 4$, so we update $\text{dist}(B)$ to be $4$ and decrease the corresponding key in the queue: 
+\begin{equation*}
+    Q = \{(B, 4), (C, \infty), (D, \infty), (E, \infty)\},
+\end{equation*}
+\begin{center}
+    \begin{tabular}{|r|ccccc|}
+        \hline 
+        $v$ & $A$ & $B$ & $C$ & $D$ & $E$ \\ \hline 
+        $\text{dist}[v]$ & $0$ & $4$ & $\infty$ & $\infty$ & $\infty$ \\ \hline 
+    \end{tabular}
+\end{center}
+We do the same for $(A, C)$: $\text{dist}[C] = \infty > \text{dist}[A] + 2$, so we update $\text{dist}[C]$ to be $2$ and modify the priority queue:
+\begin{equation*}
+    Q = \{ (C, 2), (B, 4), (D, \infty), (E, \infty)\}.
+\end{equation*}
+\begin{center}
+    \begin{tabular}{|r|ccccc|}
+        \hline 
+        $v$ & $A$ & $B$ & $C$ & $D$ & $E$ \\ \hline 
+        $\text{dist}[v]$ & $0$ & $4$ & $2$ & $\infty$ & $\infty$ \\ \hline 
+    \end{tabular}
+\end{center}
+Notice that the first element in the queue is now vertex $C$ and its shortest distance from $A$; the priority queue re-balances itself so that the optimal value is first.
+
+We continue to dequeue: $(C, 2)$ is removed, and we consider the neighbors of $C$. With the edge $(C, B)$, we consider $\text{dist}[B]$ and see that $\text{dist}[B] = 4 > \text{dist}[C] + 1$. $\text{dist}[B]$ is updated to be $3$, and the queue is modified:
+\begin{equation*}
+    Q = \{(B, 3), (D, \infty), (E, \infty)\}.
+\end{equation*}
+\begin{center}
+    \begin{tabular}{|r|ccccc|}
+        \hline 
+        $v$ & $A$ & $B$ & $C$ & $D$ & $E$ \\ \hline 
+        $\text{dist}[v]$ & $0$ & $3$ & $2$ & $\infty$ & $\infty$ \\ \hline 
+    \end{tabular}
+\end{center}
+We also encounter vertex $E$ through edge $(C, E)$; $\text{dist}[E] = \infty > \text{dist}[C] + 5$, so we update the distance from $A$ to $E$ and the queue:
+\begin{equation*}
+    Q = \{(B, 3), (E, 7), (D, \infty)\},
+\end{equation*}
+\begin{center}
+    \begin{tabular}{|r|ccccc|}
+        \hline 
+        $v$ & $A$ & $B$ & $C$ & $D$ & $E$ \\ \hline 
+        $\text{dist}[v]$ & $0$ & $3$ & $2$ & $\infty$ & $7$ \\ \hline 
+    \end{tabular}
+\end{center}
+
+Vertex $C$'s other neighbor is $D$, so we look at the edge $(C, D)$. $\text{dist}[D] = \infty > \text{dist}[C] + 4$, so we update the priority queue and distance array accordingly:
+\begin{equation*}
+    Q = \{(B, 3), (D, 6), (E, 7)\}.
+\end{equation*}
+\begin{center}
+    \begin{tabular}{|r|ccccc|}
+        \hline 
+        $v$ & $A$ & $B$ & $C$ & $D$ & $E$ \\ \hline 
+        $\text{dist}[v]$ & $0$ & $3$ & $2$ & $6$ & $7$ \\ \hline 
+    \end{tabular}
+\end{center}
+
+Vertex $C$ has no more unexplored neighbors, so we move on and dequeue the next unexpanded vertex. We look at the edges which connect vertex $B$ to an unexplored neighbor. $(B, D)$ has edge weight $2$ and $\text{dist}[D] = 6 > \text{dist}[B] + 2$, so we make updates again:
+\begin{equation*}
+    Q = \{(D, 5), (E, 7)\}.
+\end{equation*}
+\begin{center}
+    \begin{tabular}{|r|ccccc|}
+        \hline 
+        $v$ & $A$ & $B$ & $C$ & $D$ & $E$ \\ \hline 
+        $\text{dist}[v]$ & $0$ & $3$ & $2$ & $5$ & $7$ \\ \hline 
+    \end{tabular}
+\end{center}
+
+$\text{dist}[E] = 7 > \text{dist}[B] + 3$, so we continue to update: 
+\begin{equation*}
+    Q = \{ (D, 5), (E, 6)\}.
+\end{equation*}
+\begin{center}
+    \begin{tabular}{|r|ccccc|}
+        \hline 
+        $v$ & $A$ & $B$ & $C$ & $D$ & $E$ \\ \hline 
+        $\text{dist}[v]$ & $0$ & $3$ & $2$ & $5$ & $6$ \\ \hline 
+    \end{tabular}
+\end{center}
+The next vertex in the queue has no outgoing edges, so we don't take any action:
+\begin{equation*}
+    Q = \{ (D, 5)\}.
+\end{equation*}
+\begin{center}
+    \begin{tabular}{|r|ccccc|}
+        \hline 
+        $v$ & $A$ & $B$ & $C$ & $D$ & $E$ \\ \hline 
+        $\text{dist}[v]$ & $0$ & $3$ & $2$ & $5$ & $7$ \\ \hline 
+    \end{tabular}
+\end{center}
+Finally, the last vertex is taken off the queue. There is an outgoing edge to $D$, but we also don't take any action because vertex $D$ has already been explored. At this point, the queue is empty, and we have the lengths of the shortest paths with vertex $A$ as the source:
+\begin{equation*}
+    Q = \{\}.
+\end{equation*}
+\begin{center}
+    \begin{tabular}{|r|ccccc|}
+        \hline 
+        $v$ & $A$ & $B$ & $C$ & $D$ & $E$ \\ \hline 
+        $\text{dist}[v]$ & $0$ & $3$ & $2$ & $5$ & $7$ \\ \hline 
+    \end{tabular}
+\end{center}
+
+\subsection{Modifying the Input Graph}
+Last week, we saw some examples of problems where we modified Dijkstra's algorithm itself to compute other solutions related to the shortest path problem. This week, we take a look at modifying the input graph in order to obtain the shortest path using Dijkstra's without modifications. 
+
+\subsubsection{Example: Tolls}
+Suppose each vertex $v$ has an associated toll $w_v$ which we must add to the total when computing path length. We need to consider how we can account for these tolls when running Dijkstra's algorithm. The idea is to add edges and vertices such that Dijkstra's will be forced to take the route which accounts for the tolls.
+
+We replace each vertex $v$ with two vertices $v_\text{in}$ and $v_\text{out}$, connected by a directed edge $(v_\text{in}, v_\text{out})$ with edge length equal to the toll. For each directed edge $(u, v)$ in the original graph, we make an adjustment by replacing it with $(u_\text{out}, v_\text{in})$. We claim that the shortest path between $s_\text{in}$ and $v_\text{out}$ is the shortest path from $s$ to $v$ in the original graph. 
+
+\begin{figure}[H]
+    \begin{center}
+        \includesvg[width=0.8\textwidth, pretex=\scriptsize]{figures/tolls.svg}
+    \end{center}
+    \caption{Example where the original graph is modified to correctly account for tolls. Vertices $A$ and $B$ are split into two nodes each; each pair is connected with a single directed edge. }
+\end{figure}
+
+The effect of splitting each vertex into an in-node and out-node, connected by a directed edge with a length equal to the toll is equivalent to accounting for the toll of the vertex when computing path lengths. When running Dijkstra's, the algorithm is forced to take the path between $v_\text{in}$ and $v_\text{out}$, which means the shortest distance computation will add the toll value to the total shortest distance sum. It cannot take any other path because there is no edge or path connecting $v_\text{in}$ to $w_\text{out}$ for some vertices $v$ and $w$ in the graph. 
+
+
+\subsubsection{Example: Complexity}
+Suppose each path has a complexity cost equal to the number of edges contained within the path. We compute the path length by summing up the edge lengths and adding this complexity cost. 
+
+This graph doesn't require too many modifications; we simply add one to each edge length to account for the complexity cost. Notice that we can calculate the path length using:
+\begin{equation*}
+    \text{path length} = \left(\sum_{e \in P} \ell_e\right) + |P|, 
+\end{equation*}
+where $P$ represents the set of edges in the shortest path. The summation contains $|P|$ terms, which means we can redistribute as follows:
+\begin{equation*}
+    \text{path length} = \sum_{e \in P} (\ell_e + 1).
+\end{equation*}
+Running Dijkstra's algorithm will correctly compute the shortest path in the original graph. 
+
+\section{Heaps}
+Heaps, also known as priority queues, are data structures which keep track of changing objects by accounting for key values. These key values are often used to identify the object with the smallest or largest value, which can be determined quickly as the ``top'' element as the data structure continuously re-balances itself. 
+
+\subsection{Example: Heapify and Conquer}
+Suppose you decide to come up with your own heapify algorithm. You realize that you can impose a heap-like structure into an array by ensuring that the smallest element is in the first position, the next two smallest elements are the next two elements in the array (in any order), the next four smallest elements are in the next four positions of the array (in any order), and so on. To generalize this, positions $2^i$ through $2^{i+1} - 1$ are occupied by the elements of order statistic $2^i$ through $2^{i+1} - 1$ in any order.
+
+Assume that $n = 2^k - 1$ for some integer $k \geq 0$. Given a list $A[1, \dots, n]$, we want to create an algorithm which will output the elements in the order as described above; the algorithm should run in $O(n)$ time. It turns out that we can solve this problem using the partitioning algorithm we learned about in divide-and-conquer!
+
+Starting with $i = k$ and decrementing until $i = 2$, we find the $2^{i-1}$-th smallest element $x_i$ and partition around $x_i$ so that all elements in the first half are less and all elements in the second half are greater than $x_i$. 
+
+\begin{figure}[H]
+    \begin{center}
+        \includesvg[width=0.9\textwidth, pretex=\tiny]{figures/heapify_and_conquer.svg}        
+    \end{center}
+    \caption{Example of the array order when $k = 5$. The algorithm first partitions around $x_5$ so that the first half of the entire array contains values less than or equal to $x_5$. The algorithm then identifies $x_4$ and partitions accordingly. The same is repeated for $x_3$ and $x_2$.}
+\end{figure}
+
+After iteration $i$ of the algorithm, the array is ordered such that $A[x] \leq A[y]$ for $x < 2^{i-1} \leq y < 2^i$, which follows simply from the partitioning algorithm. To analyze the runtime, we need to consider the runtime of finding the $2^{i-1}$-th smallest element and the runtime of partitioning. Both take $O(2^i)$ time, so the overall runtime is given as follows:
+\begin{equation*}
+    O\left(\sum_{i=2}^k 2^i\right) \leq O(2^{k+1}) \leq O(n).
+\end{equation*}
+
+
+\subsection{Example: Heap Sort}
+Heaps are also very useful when it comes to sorting. Given an unsorted array, suppose we want to obtain the sorted version. This algorithm converts the array into a max heap and repeatedly deletes the root node of the heap, replacing it with the last node in the heap. It then invokes heapify to maintain the heap invariant. 
+
+\IncMargin{2em}
+\begin{algorithm}[H]
+    \footnotesize
+    \DontPrintSemicolon
+    \setstretch{1.125}
+    \SetKwProg{Fn}{Function}{:}{}
+    \SetKwFunction{Heapify}{Heapify}
+    \SetKwFunction{HeapSort}{HeapSort}
+    \SetKwFunction{length}{length}
+    \SetKwFunction{range}{range}
+    \SetKwInOut{Input}{Input}\SetKwInOut{Post}{Post}
+    \Input{Unsorted array $A$}
+    \Post{Sorted version of $A$}
+    \BlankLine
+    \Fn{\Heapify{$A$, $n$, $i$}}{
+        largest $\gets$ $i$ \; 
+        $\ell \gets 2i + 1$, $r \gets 2i + 2$ \; 
+        \BlankLine \BlankLine 
+        \uIf{$\ell < n$ \upshape and $A[\text{largest}] < A[\ell]$}{
+            largest $\gets$ $\ell$\;
+        }
+        \BlankLine \BlankLine 
+        \uIf{$r < N$ \upshape and $A[\text{largest}] < A[r]$}{
+            largest $\gets$ $r$\;
+        }
+        \BlankLine \BlankLine 
+        \uIf{\upshape largest $\neq$ $i$}{
+            $A[i]$, $A[\text{largest}]$ $\gets$ $A[\text{largest}]$, $A[i]$ \; 
+            \Heapify{$A$, $n$, \upshape largest}
+        }
+    }
+    \BlankLine \BlankLine
+    \Fn{\HeapSort{$A$}}{
+        $n \gets$ \length{$n$} \; 
+        \BlankLine \BlankLine 
+        \For{$i \in$ \range{$\floor*{\frac{n}{2}} -1$, $1$, $-1$}}{
+            \Heapify{$A$, $n$, $i$} \; 
+        } 
+        \BlankLine \BlankLine 
+        \For{$i \in$ \range{$N-1$, $0$, $-1$}}{
+            $A[i]$, $A[0]$ $\gets$ $A[0]$, $A[i]$ \; 
+            \Heapify{$A$, $i$, $0$} \; 
+        }
+    }
+\end{algorithm}\DecMargin{2em} 
+Heapsort runs in $O(n \log n)$ time. 
+
+\subsection{Example: Median of Integer Stream}
+Suppose we consider a situation where we need to keep track of a running median. That is, we are presented a stream of numbers one by one, and we need to update the median of the numbers we have seen thus far. Using heaps, we can solve this problem with an algorithm which runs faster than recomputing the median at each iteration.
+
+The general idea is to use two heaps, which we will denote $H_1$ and $H_2$. We want $H_1$ to be a max heap and $H_2$ to be a min heap. As we process integers, we want to keep both heaps either the same length or off by one, and we want to make sure that all of $H_1$ is less than all of $H_2$. 
+
+When we process a new element $x$, we make a comparison with the maximum element $y$ of $H_1$ and the minimum element $z$ of $H_2$, which we can compute in logarithmic time. If $x < y$, we add $x$ to $H_1$; if $x > z$, we add $x$ to $H_2$. In the case where the heaps become off by two in length, we move the extrema element and re-insert it in the other heap. 
+
+After we finish processing the stream of integers, the median as calculated as the average of $H_1$'s maximum and $H_2$'s minimum if the two heaps are equal size. If the heap sizes are off by one, the median is the extrema element in the larger heap. 
+
+
+\end{document}
